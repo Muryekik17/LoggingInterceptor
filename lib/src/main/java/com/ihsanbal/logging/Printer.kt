@@ -58,12 +58,16 @@ class Printer private constructor() {
         fun printJsonResponse(builder: LoggingInterceptor.Builder, chainMs: Long, isSuccessful: Boolean,
                               code: Int, headers: Headers, response: Response, segments: List<String>, message: String, responseUrl: String) {
             val responseBody = LINE_SEPARATOR + BODY_TAG + LINE_SEPARATOR + getResponseBody(response)
+            val responseHeaders = getResponseHeaders(builder.isResponseHeadersEnabled, headers)
             val tag = builder.getTag(false)
             val statusLine = getStatusLine(chainMs, code, message)
             val sink = builder.sink
             emit(builder, tag, RESPONSE_UP_LINE)
             logLines(builder.type, tag, arrayOf(URL_TAG + responseUrl), builder.logger, false, builder.isLogHackEnable, sink)
             logLines(builder.type, tag, statusLine, builder.logger, true, builder.isLogHackEnable, sink)
+            if (responseHeaders.isNotEmpty()) {
+                logLines(builder.type, tag, responseHeaders, builder.logger, true, builder.isLogHackEnable, sink)
+            }
             if (builder.level == Level.BASIC || builder.level == Level.BODY) {
                 logLines(builder.type, tag, responseBody.split(LINE_SEPARATOR).toTypedArray(), builder.logger,
                         true, builder.isLogHackEnable, sink)
@@ -125,6 +129,15 @@ class Printer private constructor() {
         private fun getStatusLine(tookMs: Long, code: Int, message: String): Array<String> {
             val status = "$STATUS_LINE_TAG$code / $message ($RECEIVED_TAG$tookMs ms)"
             return arrayOf(status)
+        }
+
+        private fun getResponseHeaders(isEnabled: Boolean, headers: Headers): Array<String> {
+            if (!isEnabled || isEmpty("$headers")) {
+                return emptyArray()
+            }
+            return (LINE_SEPARATOR + HEADERS_TAG + LINE_SEPARATOR + dotHeaders(headers))
+                    .split(LINE_SEPARATOR)
+                    .toTypedArray()
         }
 
         private fun emit(builder: LoggingInterceptor.Builder, tag: String, line: String) {

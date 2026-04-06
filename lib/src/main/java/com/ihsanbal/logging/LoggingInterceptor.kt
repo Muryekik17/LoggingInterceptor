@@ -111,6 +111,8 @@ class LoggingInterceptor private constructor(private val builder: Builder) : Int
         private var responseTag: String? = null
         var level = Level.BASIC
             private set
+        var isResponseHeadersEnabled = false
+            private set
         var logger: Logger? = null
             private set
         var sink: LogSink? = null
@@ -125,6 +127,15 @@ class LoggingInterceptor private constructor(private val builder: Builder) : Int
          */
         fun setLevel(level: Level): Builder {
             this.level = level
+            return this
+        }
+
+        /**
+         * @param enabled set whether response headers are logged below the status line
+         * @return Builder
+         */
+        fun logResponseHeaders(enabled: Boolean): Builder {
+            isResponseHeadersEnabled = enabled
             return this
         }
 
