@@ -111,7 +111,7 @@ class LoggingInterceptor private constructor(private val builder: Builder) : Int
         private var responseTag: String? = null
         var level = Level.BASIC
             private set
-        var isResponseHeadersEnabled = false
+        var isHeadersEnabled = true
             private set
         var logger: Logger? = null
             private set
@@ -131,11 +131,11 @@ class LoggingInterceptor private constructor(private val builder: Builder) : Int
         }
 
         /**
-         * @param enabled set whether response headers are logged below the status line
+         * @param enabled set whether request and response headers are logged
          * @return Builder
          */
-        fun logResponseHeaders(enabled: Boolean): Builder {
-            isResponseHeadersEnabled = enabled
+        fun logHeaders(enabled: Boolean): Builder {
+            isHeadersEnabled = enabled
             return this
         }
 

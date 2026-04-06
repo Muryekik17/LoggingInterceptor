@@ -47,7 +47,7 @@ class Printer private constructor() {
             val sink = builder.sink
             emit(builder, tag, REQUEST_UP_LINE)
             logLines(builder.type, tag, arrayOf(URL_TAG + url), builder.logger, false, builder.isLogHackEnable, sink)
-            logLines(builder.type, tag, getRequest(builder.level, header, method), builder.logger, true, builder.isLogHackEnable, sink)
+            logLines(builder.type, tag, getRequest(builder.level, builder.isHeadersEnabled, header, method), builder.logger, true, builder.isLogHackEnable, sink)
             if (builder.level == Level.BASIC || builder.level == Level.BODY) {
                 logLines(builder.type, tag, requestBody.split(LINE_SEPARATOR).toTypedArray(), builder.logger, true, builder.isLogHackEnable, sink)
             }
@@ -58,7 +58,7 @@ class Printer private constructor() {
         fun printJsonResponse(builder: LoggingInterceptor.Builder, chainMs: Long, isSuccessful: Boolean,
                               code: Int, headers: Headers, response: Response, segments: List<String>, message: String, responseUrl: String) {
             val responseBody = LINE_SEPARATOR + BODY_TAG + LINE_SEPARATOR + getResponseBody(response)
-            val responseHeaders = getResponseHeaders(builder.isResponseHeadersEnabled, headers)
+            val responseHeaders = getHeaders(builder.isHeadersEnabled, headers)
             val tag = builder.getTag(false)
             val statusLine = getStatusLine(chainMs, code, message)
             val sink = builder.sink
@@ -118,9 +118,9 @@ class Printer private constructor() {
             }
         }
 
-        private fun getRequest(level: Level, headers: Headers, method: String): Array<String> {
+        private fun getRequest(level: Level, isHeadersEnabled: Boolean, headers: Headers, method: String): Array<String> {
             val log: String
-            val loggableHeader = level == Level.HEADERS || level == Level.BASIC
+            val loggableHeader = isHeadersEnabled && (level == Level.HEADERS || level == Level.BASIC)
             log = METHOD_TAG + method + DOUBLE_SEPARATOR +
                     if (isEmpty("$headers")) "" else if (loggableHeader) HEADERS_TAG + LINE_SEPARATOR + dotHeaders(headers) else ""
             return log.split(LINE_SEPARATOR).toTypedArray()
@@ -131,7 +131,7 @@ class Printer private constructor() {
             return arrayOf(status)
         }
 
-        private fun getResponseHeaders(isEnabled: Boolean, headers: Headers): Array<String> {
+        private fun getHeaders(isEnabled: Boolean, headers: Headers): Array<String> {
             if (!isEnabled || isEmpty("$headers")) {
                 return emptyArray()
             }

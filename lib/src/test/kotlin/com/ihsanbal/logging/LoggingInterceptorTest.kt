@@ -5,6 +5,7 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.Protocol
 import okhttp3.Request
 import okhttp3.Response
+import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -19,10 +20,36 @@ import java.util.concurrent.TimeUnit
 class LoggingInterceptorTest {
 
     @Test
-    fun `response logging does not include headers when flag is disabled`() {
+    fun `request logging does not include headers when disabled`() {
+        val sink = CapturingSink()
+        val builder = LoggingInterceptor.Builder()
+                .setLevel(Level.BASIC)
+                .logHeaders(false)
+                .sink(sink)
+        val headers = Headers.Builder()
+                .add("authorization", "Bearer secret")
+                .add("content-type", "application/json")
+                .build()
+
+        Printer.printJsonRequest(
+                builder = builder,
+                body = "{\"ok\":true}".toRequestBody("application/json".toMediaType()),
+                url = "https://example.com/v1/profile",
+                header = headers,
+                method = "POST")
+
+        val output = sink.output()
+        assertFalse(output.contains("Headers:"))
+        assertFalse(output.contains("authorization: Bearer secret"))
+        assertTrue(output.contains("Body:"))
+    }
+
+    @Test
+    fun `response logging does not include headers when disabled`() {
         val sink = CapturingSink()
         val builder = LoggingInterceptor.Builder()
                 .setLevel(Level.BODY)
+                .logHeaders(false)
                 .sink(sink)
         val response = createResponse(
                 headers = Headers.Builder()
@@ -49,11 +76,10 @@ class LoggingInterceptorTest {
     }
 
     @Test
-    fun `response logging includes headers below status line when flag is enabled`() {
+    fun `response logging includes headers below status line by default`() {
         val sink = CapturingSink()
         val builder = LoggingInterceptor.Builder()
                 .setLevel(Level.BODY)
-                .logResponseHeaders(true)
                 .sink(sink)
         val response = createResponse(
                 headers = Headers.Builder()
@@ -89,7 +115,6 @@ class LoggingInterceptorTest {
         val sink = CapturingSink()
         val builder = LoggingInterceptor.Builder()
                 .setLevel(Level.HEADERS)
-                .logResponseHeaders(true)
                 .sink(sink)
         val response = createResponse(
                 headers = Headers.Builder()
